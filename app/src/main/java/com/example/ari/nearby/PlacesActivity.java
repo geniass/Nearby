@@ -16,38 +16,39 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
-import android.widget.ListAdapter;
 import android.widget.ProgressBar;
-import android.widget.SimpleAdapter;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
 import java.util.ArrayList;
-import java.util.Map;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-public class PlacesActivity extends ListActivity implements LoaderManager.LoaderCallbacks<Cursor>, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class PlacesActivity extends ListActivity implements LoaderManager.LoaderCallbacks<Cursor>, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
     final private String TAG = "PlacesActivity";
     final private int MY_PERMISSIONS_ACCESS_FINE_LOCATION = 3423;
 
-    ListAdapter mAdapter;
+    Placemark[] placemarkArray = null;
+    PlacemarkArrayAdapter mAdapter;
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
+    private LocationRequest mLocationRequest;
 
-    private ArrayList<Map<String, String>> getPlacemarks(@android.support.annotation.RawRes int kmlRes, Context context) {
-        ArrayList<Map<String, String>> placemarks = null;
+    private ArrayList<Placemark> getPlacemarks(@android.support.annotation.RawRes int kmlRes, Context context) {
+        ArrayList<Placemark> placemarks = null;
 
         try {
             SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
@@ -75,6 +76,11 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
                 .addApi(LocationServices.API)
                 .build();
 
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(20 * 1000);
+        mLocationRequest.setFastestInterval(5 * 1000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
         // Create a progress bar to display while the list loads
         ProgressBar progressBar = new ProgressBar(this);
         progressBar.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.WRAP_CONTENT,
@@ -87,18 +93,18 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
         root.addView(progressBar);
 
         //TODO: do it better with loaders, custom adaptors  etc
-        ArrayList<Map<String, String>> placemarks = getPlacemarks(R.raw.london, getApplicationContext());
-        Log.d(TAG, "" + placemarks.get(0).get("Title"));
+        ArrayList<Placemark> placemarks = getPlacemarks(R.raw.london, getApplicationContext());
 
         String[] fromColumns = {"Title"};
         int[] toViews = {R.id.text1}; // The TextView in simple_list_item_1
 
         // Create an empty adapter we will use to display the loaded data.
         // We pass null for the cursor, then update it in onLoadFinished()
-        mAdapter = new SimpleAdapter(this,
-                placemarks,
-                R.layout.placemark_list_item,
-                fromColumns, toViews);
+        placemarkArray = new Placemark[placemarks.size()];
+        placemarkArray = placemarks.toArray(placemarkArray);
+
+        mAdapter = new PlacemarkArrayAdapter(this, placemarkArray);
+        mAdapter.sort(PlacemarkArrayAdapter.COMPARATOR);
         setListAdapter(mAdapter);
 
         // Prepare the loader.  Either re-connect with an existing one,
@@ -165,12 +171,7 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
                     MY_PERMISSIONS_ACCESS_FINE_LOCATION);
             return;
         }
-        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
-                mGoogleApiClient);
-
-        if (mLastLocation != null) {
-            Log.d(TAG, "" + mLastLocation.getLatitude());
-        }
+        beginLocationUpdates();
     }
 
     @Override
@@ -191,17 +192,44 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
             case MY_PERMISSIONS_ACCESS_FINE_LOCATION: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // granted
-                    try {
-                        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
-                                mGoogleApiClient);
-                        if (mLastLocation != null) {
-                            Log.d(TAG, "" + mLastLocation.getLatitude());
-                        }
-                    } catch (SecurityException e) {
-                        Log.e(TAG, e.getLocalizedMessage());
-                    }
+                    beginLocationUpdates();
                 }
             }
         }
+    }
+
+    private void beginLocationUpdates() {
+        try {
+            mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                    mGoogleApiClient);
+
+            if (mLastLocation != null) {
+                Log.d(TAG, "Last known: " + mLastLocation.getLongitude() + ",  " + mLastLocation.getLatitude());
+                updateWithNewLocation(mLastLocation);
+            }
+
+            LocationServices.FusedLocationApi.requestLocationUpdates(
+                    mGoogleApiClient, mLocationRequest, this);
+        } catch (SecurityException e) {
+            Log.e(TAG, e.getLocalizedMessage());
+        }
+    }
+
+    private void updateWithNewLocation(Location location) {
+        for (Placemark place : placemarkArray) {
+            float[] results = new float[1]; // length 1 to ignore bearing
+            Location.distanceBetween(location.getLatitude(), location.getLongitude(), place.getLatitude(), place.getLongitude(), results);
+            place.setDistance(results[0]);
+            Log.d(TAG, "LatLong: " + place.getLatitude() + ", " + place.getLongitude());
+            Log.d(TAG, "Distance: " + results[0]);
+        }
+        mAdapter.sort(PlacemarkArrayAdapter.COMPARATOR);
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        Log.d(TAG, "Loc changed: " + location.getAccuracy());
+        mLastLocation = location;
+        updateWithNewLocation(location);
     }
 }
