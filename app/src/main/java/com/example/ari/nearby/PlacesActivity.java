@@ -37,35 +37,12 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
     final private String TAG = "PlacesActivity";
     final private int MY_PERMISSIONS_ACCESS_FINE_LOCATION = 3423;
 
-    Placemark[] placemarkArray = null;
+    PlacemarkManager placemarkManager;
     PlacemarkArrayAdapter mAdapter;
-    /**
-     * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
+
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
     private LocationRequest mLocationRequest;
-
-    private ArrayList<Placemark> getPlacemarks(@android.support.annotation.RawRes int kmlRes, Context context) {
-        ArrayList<Placemark> placemarks = null;
-
-        try {
-            SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
-            SAXParser saxParser = saxParserFactory.newSAXParser();
-            XMLReader xmlReader = saxParser.getXMLReader();
-            PlacemarkSAXHandler saxHandler = new PlacemarkSAXHandler();
-
-            xmlReader.setContentHandler(saxHandler);
-            xmlReader.parse(new InputSource(context.getResources().openRawResource(kmlRes)));
-
-            placemarks = saxHandler.getParsedData();
-        } catch (Exception e) {
-            Log.e(TAG, e.getLocalizedMessage());
-        } finally {
-            return placemarks;
-        }
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,17 +70,9 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
         root.addView(progressBar);
 
         //TODO: do it better with loaders, custom adaptors  etc
-        ArrayList<Placemark> placemarks = getPlacemarks(R.raw.london, getApplicationContext());
+        placemarkManager = new PlacemarkManager(getApplicationContext());
 
-        String[] fromColumns = {"Title"};
-        int[] toViews = {R.id.text1}; // The TextView in simple_list_item_1
-
-        // Create an empty adapter we will use to display the loaded data.
-        // We pass null for the cursor, then update it in onLoadFinished()
-        placemarkArray = new Placemark[placemarks.size()];
-        placemarkArray = placemarks.toArray(placemarkArray);
-
-        mAdapter = new PlacemarkArrayAdapter(this, placemarkArray);
+        mAdapter = new PlacemarkArrayAdapter(this, placemarkManager.getPlacemarkArray());
         mAdapter.sort(PlacemarkArrayAdapter.COMPARATOR);
         setListAdapter(mAdapter);
 
@@ -216,13 +185,7 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
     }
 
     private void updateWithNewLocation(Location location) {
-        for (Placemark place : placemarkArray) {
-            float[] results = new float[1]; // length 1 to ignore bearing
-            Location.distanceBetween(location.getLatitude(), location.getLongitude(), place.getLatitude(), place.getLongitude(), results);
-            place.setDistance(results[0]);
-            Log.d(TAG, "LatLong: " + place.getLatitude() + ", " + place.getLongitude());
-            Log.d(TAG, "Distance: " + results[0]);
-        }
+        placemarkManager.updateWithNewLocation(location);
         mAdapter.sort(PlacemarkArrayAdapter.COMPARATOR);
     }
 
