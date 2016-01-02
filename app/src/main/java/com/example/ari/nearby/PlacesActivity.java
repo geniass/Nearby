@@ -3,7 +3,8 @@ package com.example.ari.nearby;
 import android.Manifest;
 import android.app.ListActivity;
 import android.app.LoaderManager;
-import android.content.Context;
+import android.app.PendingIntent;
+import android.content.Intent;
 import android.content.Loader;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -23,14 +24,6 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-
-import org.xml.sax.InputSource;
-import org.xml.sax.XMLReader;
-
-import java.util.ArrayList;
-
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
 
 public class PlacesActivity extends ListActivity implements LoaderManager.LoaderCallbacks<Cursor>, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
@@ -141,6 +134,17 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
             return;
         }
         beginLocationUpdates();
+
+        LocationRequest locationRequest = LocationRequest.create()
+                .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
+                .setFastestInterval(10*1000L)
+                .setInterval(30*1000L)
+                .setSmallestDisplacement(100.0F);
+        PendingIntent pendingIntent = PendingIntent.getService(this, 0,
+                new Intent(this, LocationService.class),
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        LocationServices.FusedLocationApi.requestLocationUpdates(
+                mGoogleApiClient, locationRequest, pendingIntent);
     }
 
     @Override
