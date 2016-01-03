@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.Context;
 import android.location.Location;
+import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
@@ -24,7 +25,7 @@ public class LocationService extends IntentService {
 
     PlacemarkManager placemarkManager;
     private final int mId = 2324;
-    private final double FILTER_DISTANCE = 2000.f; //TODO: make a preference or something
+    private final double FILTER_DISTANCE = 2000; //TODO: make a preference or something
 
     public LocationService() {
         super("LocationService");
@@ -53,22 +54,38 @@ public class LocationService extends IntentService {
     private void showNotification(ArrayList<Placemark> places) {
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(this)
-                        .setSmallIcon(R.mipmap.ic_launcher);
+                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION);
 
         if (places.isEmpty()) return;
         if (places.size() == 1) {
-            mBuilder.setContentTitle(places.get(0).getTitle() + " is Nearby")
-                    .setContentText(String.format("%1$.2f km away", places.get(0).getDistance() / 1000.));
+            Placemark place = places.get(0);
+            mBuilder.setContentTitle(String.format(getString(R.string.place_nearby), places.get(0).getTitle()))
+                    .setContentText(String.format(getString(R.string.place_distance), place.getDistance() / 1000.));
+
+            Uri mapUri = Uri.parse(String.format(getString(R.string.map_uri_format), place.getLatitude(), place.getLongitude(), 15, Uri.encode(place.getTitle())));
+            Intent mapIntent = new Intent(Intent.ACTION_VIEW, mapUri);
+            mapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, mapIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            mBuilder.setContentIntent(pendingIntent);
         } else {
-            mBuilder.setContentTitle("Places are Nearby");
+            mBuilder.setContentTitle(String.format(getString(R.string.places_nearby), places.size()));
             NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
-            inboxStyle.setBigContentTitle("Places are Nearby:");
+            inboxStyle.setBigContentTitle(getString(R.string.places_nearby));
 
             for (Placemark p : places) {
-                inboxStyle.addLine(String.format("%1$s (%2$.2f km)", p.getTitle(), p.getDistance() / 1000.));
+                inboxStyle.addLine(String.format(getString(R.string.place_notification_item), p.getTitle(), p.getDistance() / 1000.));
             }
             mBuilder.setStyle(inboxStyle);
+
+            /*TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+            stackBuilder.addParentStack(PlacesActivity.class);
+       //     stackBuilder.addNextIntent(resultIntent);
+            PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
+            mBuilder.setContentIntent(resultPendingIntent);*/
         }
+
+
 
 /*// Creates an explicit intent for an Activity in your app
         Intent resultIntent = new Intent(this, ResultActivity.class);
