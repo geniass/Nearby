@@ -155,4 +155,6 @@
     <string name="place_distance">%1$.2f km away</string>
     <string name="places_nearby">%d Places are Nearby</string>
     <string name="place_notification_item">%1$s (%2$.2f km)</string>
+    <string name="kml_file_chooser">Choose KML file to use</string>
+    <string name="kml_file_chooser_summary">Import places from this KML file</string>
 </resources>

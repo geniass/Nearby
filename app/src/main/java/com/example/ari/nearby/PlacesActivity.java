@@ -6,11 +6,13 @@ import android.app.LoaderManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.Loader;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.Gravity;
@@ -28,6 +30,7 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
+import java.io.File;
 import java.util.Locale;
 
 public class PlacesActivity extends ListActivity implements LoaderManager.LoaderCallbacks<Cursor>, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
@@ -69,6 +72,11 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
 
         //TODO: do it better with loaders, custom adaptors  etc
         placemarkManager = new PlacemarkManager(getApplicationContext());
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        String fileName = settings.getString("kml_file_chooser", "");
+        if (!fileName.isEmpty()) {
+            placemarkManager = new PlacemarkManager(this, new File(fileName));
+        }
 
         mAdapter = new PlacemarkArrayAdapter(this, placemarkManager.getPlacemarkArray());
         mAdapter.sort(PlacemarkArrayAdapter.COMPARATOR);
@@ -107,6 +115,8 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent intent = new Intent(this, SettingsActivity.class);
+            startActivity(intent);
             return true;
         }
         return super.onOptionsItemSelected(item);

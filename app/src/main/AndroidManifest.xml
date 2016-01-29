@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.ari.nearby">
-
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
@@ -27,14 +27,18 @@
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
 
-        <receiver
-            android:name=".LocationReceiver"
-            android:enabled="true"
-            android:exported="true" />
-
         <service
             android:name=".LocationService"
-            android:exported="false"></service>
+            android:exported="false" />
+
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings"
+            android:parentActivityName=".PlacesActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.example.ari.nearby.PlacesActivity" />
+        </activity>
     </application>
 
 </manifest>

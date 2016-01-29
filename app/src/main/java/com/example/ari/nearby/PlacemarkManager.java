@@ -7,6 +7,8 @@ import android.util.Log;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.ArrayList;
 
 import javax.xml.parsers.SAXParser;
@@ -29,6 +31,34 @@ public class PlacemarkManager {
         placemarkArray = new Placemark[placemarks.size()];
 
         placemarkArray = placemarks.toArray(placemarkArray);
+    }
+
+    public PlacemarkManager(Context context, File inputFile) {
+        ArrayList<Placemark> placemarks = getPlacemarks(inputFile, context);
+        placemarkArray = new Placemark[placemarks.size()];
+
+        placemarkArray = placemarks.toArray(placemarkArray);
+    }
+
+    private ArrayList<Placemark> getPlacemarks(File inputFile, Context context) {
+        ArrayList<Placemark> placemarks = new ArrayList<>();
+
+        try {
+            SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
+            SAXParser saxParser = saxParserFactory.newSAXParser();
+            XMLReader xmlReader = saxParser.getXMLReader();
+            PlacemarkSAXHandler saxHandler = new PlacemarkSAXHandler();
+
+            xmlReader.setContentHandler(saxHandler);
+            xmlReader.parse(new InputSource(new FileInputStream(inputFile)));
+
+            placemarks = saxHandler.getParsedData();
+            Log.d(TAG, "Size:"+placemarks.size());
+        } catch (Exception e) {
+            Log.e(TAG, e.getLocalizedMessage());
+        } finally {
+            return placemarks;
+        }
     }
 
     private ArrayList<Placemark> getPlacemarks(@android.support.annotation.RawRes int kmlRes, Context context) {
