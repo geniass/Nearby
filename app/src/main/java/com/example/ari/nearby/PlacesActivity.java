@@ -28,6 +28,7 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
+import java.io.FileNotFoundException;
 import java.util.Locale;
 
 public class PlacesActivity extends ListActivity implements LoaderManager.LoaderCallbacks<Cursor>, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
@@ -68,11 +69,14 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
         root.addView(progressBar);
 
         //TODO: do it better with loaders, custom adaptors  etc
-        placemarkManager = new PlacemarkManager(getApplicationContext());
-
-        mAdapter = new PlacemarkArrayAdapter(this, placemarkManager.getPlacemarkArray());
-        mAdapter.sort(PlacemarkArrayAdapter.COMPARATOR);
-        setListAdapter(mAdapter);
+        try {
+            placemarkManager = new PlacemarkManager(this);
+            mAdapter = new PlacemarkArrayAdapter(this, placemarkManager.getPlacemarkArray());
+            mAdapter.sort(PlacemarkArrayAdapter.COMPARATOR);
+            setListAdapter(mAdapter);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
 
         this.getListView().setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -206,8 +210,10 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
     }
 
     private void updateWithNewLocation(Location location) {
-        placemarkManager.updateWithNewLocation(location);
-        mAdapter.sort(PlacemarkArrayAdapter.COMPARATOR);
+        if (mAdapter != null) {
+            placemarkManager.updateWithNewLocation(location);
+            mAdapter.sort(PlacemarkArrayAdapter.COMPARATOR);
+        }
     }
 
     @Override

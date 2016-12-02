@@ -14,6 +14,7 @@ import android.util.Log;
 import com.google.android.gms.location.FusedLocationProviderApi;
 import com.google.android.gms.location.LocationResult;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -35,20 +36,24 @@ public class LocationService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         if (!LocationResult.hasResult(intent)) return;
 
-        placemarkManager = new PlacemarkManager(getApplicationContext());
-        final LocationResult locationResult = LocationResult.extractResult(intent);
-        Location location = locationResult.getLastLocation();
-        placemarkManager.updateWithNewLocation(location);
-        Log.d("LocationService", "Lat: " + location.getLatitude());
-        ArrayList<Placemark> placemarks = new ArrayList<>(Arrays.asList(placemarkManager.getPlacemarkArray()));
-        ArrayList<Placemark> filteredPlaces = new ArrayList<>();
-        for (Placemark p : placemarks) {
-            if (p.getDistance() < FILTER_DISTANCE) {
-                filteredPlaces.add(p);
+        try {
+            placemarkManager = new PlacemarkManager(getApplicationContext());
+            final LocationResult locationResult = LocationResult.extractResult(intent);
+            Location location = locationResult.getLastLocation();
+            placemarkManager.updateWithNewLocation(location);
+            Log.d("LocationService", "Lat: " + location.getLatitude());
+            ArrayList<Placemark> placemarks = new ArrayList<>(Arrays.asList(placemarkManager.getPlacemarkArray()));
+            ArrayList<Placemark> filteredPlaces = new ArrayList<>();
+            for (Placemark p : placemarks) {
+                if (p.getDistance() < FILTER_DISTANCE) {
+                    filteredPlaces.add(p);
+                }
             }
-        }
 
-        showNotification(filteredPlaces);
+            showNotification(filteredPlaces);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     private void showNotification(ArrayList<Placemark> places) {
