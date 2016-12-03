@@ -35,7 +35,13 @@
 
         <service
             android:name=".LocationService"
-            android:exported="false"></service>
+            android:exported="false" />
+
+        <provider
+            android:name=".PlacesContentProvider"
+            android:authorities="com.example.ari.nearby.PlacesContentProvider"
+            android:enabled="true"
+            android:exported="true" />
     </application>
 
 </manifest>
