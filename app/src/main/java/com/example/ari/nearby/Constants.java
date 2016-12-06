@@ -6,4 +6,6 @@ package com.example.ari.nearby;
 
 public class Constants {
     public static String KML_FILENAME = "UK 2016.kml";
+
+    public static final double FILTER_DISTANCE = 2000; //TODO: make a preference or something
 }

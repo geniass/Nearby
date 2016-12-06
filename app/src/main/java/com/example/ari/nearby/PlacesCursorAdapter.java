@@ -46,7 +46,7 @@ public class PlacesCursorAdapter extends CursorRecyclerViewAdapter<PlacesCursorA
         Placemark place = Placemark.fromCursor(cursor);
 
         if (location != null) {
-            place.setDistance(calcDistance(location.getLatitude(), location.getLongitude(), place.getLatitude(), place.getLongitude()));
+            place.setDistance(Utils.distanceToPlace(location, place));
         }
 
         viewHolder.bindPlace(place);

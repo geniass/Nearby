@@ -5,6 +5,8 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.Context;
+import android.database.Cursor;
+import android.database.CursorWrapper;
 import android.location.Location;
 import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
@@ -18,15 +20,15 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static com.example.ari.nearby.Constants.FILTER_DISTANCE;
+
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
  * a service on a separate handler thread.
  */
 public class LocationService extends IntentService {
 
-    PlacemarkManager placemarkManager;
     private final int mId = 2324;
-    private final double FILTER_DISTANCE = 2000; //TODO: make a preference or something
 
     public LocationService() {
         super("LocationService");
@@ -36,24 +38,25 @@ public class LocationService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         if (!LocationResult.hasResult(intent)) return;
 
-        try {
-            placemarkManager = new PlacemarkManager(getApplicationContext());
-            final LocationResult locationResult = LocationResult.extractResult(intent);
-            Location location = locationResult.getLastLocation();
-            placemarkManager.updateWithNewLocation(location);
-            Log.d("LocationService", "Lat: " + location.getLatitude());
-            ArrayList<Placemark> placemarks = new ArrayList<>(Arrays.asList(placemarkManager.getPlacemarkArray()));
-            ArrayList<Placemark> filteredPlaces = new ArrayList<>();
-            for (Placemark p : placemarks) {
-                if (p.getDistance() < FILTER_DISTANCE) {
-                    filteredPlaces.add(p);
-                }
-            }
+        final LocationResult locationResult = LocationResult.extractResult(intent);
+        Location location = locationResult.getLastLocation();
 
-            showNotification(filteredPlaces);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        // get cursor from content provider
+        // then create the wrapper which 'sorts' the cursor by distance
+        CursorWrapper cursor = new DistanceCursorWrapper(getContentResolver().query(PlacesContentProvider.CONTENT_URI, null, null, null, null), location);
+
+        // build the list of places to be shown in the notification
+        // note the list will automatically be sorted
+        ArrayList<Placemark> filteredPlaces = new ArrayList<>();
+        while (cursor.moveToNext()) {
+            Placemark p = Placemark.fromCursor(cursor);
+            p.setDistance(Utils.distanceToPlace(location, p));
+            if (p.getDistance() < FILTER_DISTANCE) {
+                filteredPlaces.add(p);
+            }
         }
+
+        showNotification(filteredPlaces);
     }
 
     private void showNotification(ArrayList<Placemark> places) {

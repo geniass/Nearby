@@ -8,4 +8,8 @@ public class Utils {
         Location.distanceBetween(latitude1, longitude1, latitude2, longitude2, results);
         return results[0];
     }
+
+    public static float distanceToPlace(Location location, Placemark place) {
+        return calcDistance(location.getLatitude(), location.getLongitude(), place.getLatitude(), place.getLongitude());
+    }
 }
