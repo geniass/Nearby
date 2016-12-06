@@ -1,25 +1,24 @@
 package com.example.ari.nearby;
 
 import android.Manifest;
-import android.app.ListActivity;
+import android.app.Activity;
 import android.app.LoaderManager;
 import android.app.PendingIntent;
+import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.location.Location;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
-import android.widget.AdapterView;
 import android.widget.ProgressBar;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -28,16 +27,15 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
-import java.io.FileNotFoundException;
-import java.util.Locale;
-
-public class PlacesActivity extends ListActivity implements LoaderManager.LoaderCallbacks<Cursor>, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
+public class PlacesActivity extends Activity implements LoaderManager.LoaderCallbacks<Cursor>, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
     final private String TAG = "PlacesActivity";
     final private int MY_PERMISSIONS_ACCESS_FINE_LOCATION = 3423;
 
+    private static final int PLACES_LOADER = 0;
+
     PlacemarkManager placemarkManager;
-    PlacemarkArrayAdapter mAdapter;
+    private PlacesCursorAdapter mAdapter;
 
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
@@ -62,37 +60,18 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
         progressBar.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.WRAP_CONTENT,
                 AbsListView.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
         progressBar.setIndeterminate(true);
-        getListView().setEmptyView(progressBar);
 
         // Must add the progress bar to the root of the layout
         ViewGroup root = (ViewGroup) findViewById(android.R.id.content);
         root.addView(progressBar);
 
-        //TODO: do it better with loaders, custom adaptors  etc
-        try {
-            placemarkManager = new PlacemarkManager(this);
-            mAdapter = new PlacemarkArrayAdapter(this, placemarkManager.getPlacemarkArray());
-            mAdapter.sort(PlacemarkArrayAdapter.COMPARATOR);
-            setListAdapter(mAdapter);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+        getLoaderManager().initLoader(PLACES_LOADER, null, this);
 
-        this.getListView().setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapter, View view, int position, long id) {
-                Placemark place = (Placemark) adapter.getItemAtPosition(position);
-
-                Uri mapUri = Uri.parse(String.format(Locale.US, getString(R.string.map_uri_format), place.getLatitude(), place.getLongitude(), 15, Uri.encode(place.getTitle())));
-                Intent mapIntent = new Intent(Intent.ACTION_VIEW, mapUri);
-                mapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                startActivity(mapIntent);
-            }
-        });
-
-        // Prepare the loader.  Either re-connect with an existing one,
-        // or start a new one.
-        //getLoaderManager().initLoader(0, null, this);
+        setContentView(R.layout.activity_places);
+        mAdapter = new PlacesCursorAdapter(this, null);
+        RecyclerView recyclerView = (RecyclerView) findViewById(R.id.places_list);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setAdapter(mAdapter);
     }
 
     @Override
@@ -118,17 +97,22 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        return null;
+        switch (id) {
+            case PLACES_LOADER:
+                return new CursorLoader(getApplicationContext(), PlacesContentProvider.CONTENT_URI, null, null, null, null);
+            default:
+                return null;
+        }
     }
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-
+        mAdapter.changeCursor(data);
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
-
+        // TODO:
     }
 
     @Override
@@ -210,10 +194,8 @@ public class PlacesActivity extends ListActivity implements LoaderManager.Loader
     }
 
     private void updateWithNewLocation(Location location) {
-        if (mAdapter != null) {
-            placemarkManager.updateWithNewLocation(location);
-            mAdapter.sort(PlacemarkArrayAdapter.COMPARATOR);
-        }
+        getLoaderManager().restartLoader(PLACES_LOADER, null, this);
+        mAdapter.setCurrentLocation(location);
     }
 
     @Override

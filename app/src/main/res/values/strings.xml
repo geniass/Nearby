@@ -155,4 +155,5 @@
     <string name="place_distance">%1$.2f km away</string>
     <string name="places_nearby">%d Places are Nearby</string>
     <string name="place_notification_item">%1$s (%2$.2f km)</string>
+    <string name="empty_list">No nearby places</string>
 </resources>

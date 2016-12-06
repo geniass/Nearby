@@ -1,15 +1,17 @@
 package com.example.ari.nearby;
 
+import android.database.Cursor;
+
 /**
  * Class representing placemark used in Google Maps
  *
  * @author poohdishr
  */
 public class Placemark {
-    private String title;
-    private String description;
-    private double latitude;
-    private double longitude;
+    private String title = "";
+    private String description = "";
+    private double latitude = 0.;
+    private double longitude = 0.;
     private double distance = 0.f;
 
     public double getDistance() {
@@ -45,7 +47,6 @@ public class Placemark {
     }
 
     public String getDescription() {
-
         return description;
     }
 
@@ -53,4 +54,13 @@ public class Placemark {
         this.description = description;
     }
 
+    public static Placemark fromCursor(Cursor cursor) {
+        // TODO: exception if column not found
+        Placemark place = new Placemark();
+        place.setTitle(cursor.getString(cursor.getColumnIndex(PlacesContentProvider.TITLE)));
+        place.setDescription(cursor.getString(cursor.getColumnIndex(PlacesContentProvider.DESCRIPTION)));
+        place.setLatitude(cursor.getDouble(cursor.getColumnIndex(PlacesContentProvider.LATITUDE)));
+        place.setLongitude(cursor.getDouble(cursor.getColumnIndex(PlacesContentProvider.LONGITUDE)));
+        return place;
+    }
 }
