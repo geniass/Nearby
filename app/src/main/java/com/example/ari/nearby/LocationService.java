@@ -85,23 +85,15 @@ public class LocationService extends IntentService {
             }
             mBuilder.setStyle(inboxStyle);
 
-            /*TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+            // create the intent used for launching the main activity with a back-stack
+            TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+            Intent i = new Intent(this, PlacesActivity.class);
             stackBuilder.addParentStack(PlacesActivity.class);
-       //     stackBuilder.addNextIntent(resultIntent);
+            stackBuilder.addNextIntent(i);
             PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
-            mBuilder.setContentIntent(resultPendingIntent);*/
+            mBuilder.setContentIntent(resultPendingIntent);
         }
 
-
-
-/*// Creates an explicit intent for an Activity in your app
-        Intent resultIntent = new Intent(this, ResultActivity.class);
-
-// The stack builder object will contain an artificial back stack for the
-// started Activity.
-// This ensures that navigating backward from the Activity leads out of
-// your application to the Home screen.TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);stackBuilder.addParentStack(ResultActivity.class);stackBuilder.addNextIntent(resultIntent);PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
-        mBuilder.setContentIntent(resultPendingIntent);*/
         NotificationManager mNotificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         mNotificationManager.notify(mId, mBuilder.build());
