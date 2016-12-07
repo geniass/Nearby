@@ -79,7 +79,6 @@ public class LocationService extends IntentService {
         } else {
             mBuilder.setContentTitle(String.format(getString(R.string.places_nearby), places.size()));
             NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
-            inboxStyle.setBigContentTitle(getString(R.string.places_nearby));
 
             for (Placemark p : places) {
                 inboxStyle.addLine(String.format(getString(R.string.place_notification_item), p.getTitle(), p.getDistance() / 1000.));
